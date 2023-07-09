@@ -1,6 +1,18 @@
 Streamlit LLM Explorer
 ===
 
+Exploring LLMs for your document with Streamlit for the UI
+and OpenAI LLM model.
+
+This a proof-of-concept code but I want it fully featured and useable
+for personal use.
+
+
+## What you need?
+
+- Python3
+- OpenAI API Key
+
 
 ## Setup
 
@@ -33,4 +45,10 @@ streamlit run app/llm_docchat2.py
 ```
 
 
-## Resources
+## TODOs
+
+- Add memory to the conversation
+- Show conversation history
+- Use multiple documents for a session
+- Utilize `chat_models.ChatOpenAI` to include results from OpenAI's model
+- Use a Chroma DB for the VectorStore instead of pickle

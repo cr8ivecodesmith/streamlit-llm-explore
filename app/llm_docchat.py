@@ -76,8 +76,6 @@ def get_vectorstore(chunks, metadata):
     - We only want to compute the embeddings once on a given file
 
     TODO:
-    - Use the whole metadata to create a unique filename for the
-      file.
     - Store the pickle file in another directory
 
     """
@@ -121,14 +119,6 @@ def query_document(query, vectorstore):
 
 
 def main():
-    """
-
-    TODO:
-    - Add memory to the conversation
-    - Show conversation history
-    - Use multiple documents for a session
-
-    """
     sidebar()
     st.header("Chat with Document💬")
 
