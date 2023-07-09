@@ -81,7 +81,7 @@ def get_vectorstore(chunks, metadata):
     - Store the pickle file in another directory
 
     """
-    store_name = f'{metadata.get("name")}.pkl'
+    store_name = f'{metadata.get("name")}-{metadata.get("size")}.pkl'
     if Path(store_name).exists():
         with open(store_name, 'rb') as fh:
             vstore = pickle.load(fh)
@@ -121,6 +121,14 @@ def query_document(query, vectorstore):
 
 
 def main():
+    """
+
+    TODO:
+    - Add memory to the conversation
+    - Show conversation history
+    - Use multiple documents for a session
+
+    """
     sidebar()
     st.header("Chat with Document💬")
 
@@ -142,7 +150,7 @@ def main():
         disabled=not uploaded_file,
     )
     if query and vectorstore:
-        query += '. Use markdown formatting.'
+        query += '. Format the answer in markdown.'
         res = query_document(query, vectorstore)
         st.markdown(res)
 
