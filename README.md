@@ -41,7 +41,7 @@ python ex/openai_check.py
 
 
 ```
-streamlit run app/llm_docchat2.py
+streamlit run app/llm_docchat.py
 ```
 
 
