@@ -13,7 +13,7 @@ load_dotenv(PROJECT_ENV)
 
 
 if not DB_PATH.exists():
-    DB_PATH.mkdir(mode=775, exists_ok=True)
+    DB_PATH.mkdir(mode=775, exist_ok=True)
 
 
 def get_openai_api_key():
