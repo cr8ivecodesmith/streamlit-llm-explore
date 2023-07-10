@@ -57,6 +57,20 @@ def get_document(uploaded_file):
     return doc, metadata
 
 
+def get_documents(uploaded_files):
+
+    docs, metadatas = [], []
+
+    for file_ in uploaded_files:
+        doc, doc_meta = get_document(file_)
+        docs.append(doc)
+        metadatas.append(doc_meta)
+
+    metadatas = sorted(metadatas, key=lambda x: x['name'])
+
+    return docs, metadatas
+
+
 def get_chunks(doc, chunk_size=1024, chunk_overlap=256):
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
@@ -65,6 +79,13 @@ def get_chunks(doc, chunk_size=1024, chunk_overlap=256):
     )
     chunks = text_splitter.split_text(text=doc)
     return chunks
+
+
+def get_chunks_list(docs, chunk_size=1024, chunk_overlap=256):
+    chunks_list = []
+    for doc in docs:
+        chunks_list.extend(get_chunks(doc, chunk_size, chunk_overlap))
+    return chunks_list
 
 
 def get_vectorstore(chunks, metadata):
@@ -79,7 +100,14 @@ def get_vectorstore(chunks, metadata):
     - Store the pickle file in another directory
 
     """
-    store_name = f'{metadata.get("name")}-{metadata.get("size")}.pkl'
+    if isinstance(metadata, list):
+        # This is a multi-file batch
+        store_name = (
+            '-'.join([f'{i["name"]}-{i["size"]}' for i in metadata]) + '.pkl'
+        )
+    else:
+        store_name = f'{metadata.get("name")}-{metadata.get("size")}.pkl'
+
     if Path(store_name).exists():
         with open(store_name, 'rb') as fh:
             vstore = pickle.load(fh)
@@ -125,14 +153,14 @@ def main():
     uploaded_file = st.file_uploader(
         'Upload your document',
         type=('txt', 'md', 'pdf'),
-        accept_multiple_files=False,
+        accept_multiple_files=True,
     )
     if not uploaded_file:
         return
 
-    doc, doc_meta = get_document(uploaded_file)
-    chunks = get_chunks(doc)
-    vectorstore = get_vectorstore(chunks, metadata=doc_meta)
+    docs, doc_metas = get_documents(uploaded_file)
+    chunks = get_chunks_list(docs)
+    vectorstore = get_vectorstore(chunks, metadata=doc_metas)
 
     query = st.text_input(
         'Ask something about the document',

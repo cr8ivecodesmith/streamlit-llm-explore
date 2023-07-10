@@ -47,8 +47,9 @@ streamlit run app/llm_docchat.py
 
 ## TODOs
 
-- Add memory to the conversation
-- Show conversation history
-- Use multiple documents for a session
-- Utilize `chat_models.ChatOpenAI` to include results from OpenAI's model
-- Use a Chroma DB for the VectorStore instead of pickle
+- [ ] Add memory to the conversation
+- [ ] Show conversation history
+- [x] Use multiple documents for a session
+- [ ] Use a Chroma DB for the VectorStore instead of pickle
+- [ ] Save sessions and have the ability to use it
+- [ ] Utilize `chat_models.ChatOpenAI` to include results from OpenAI's model
