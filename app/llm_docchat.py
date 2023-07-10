@@ -1,5 +1,4 @@
 import pickle
-from pathlib import Path
 
 import streamlit as st
 from PyPDF2 import PdfReader
@@ -11,7 +10,12 @@ from langchain.llms import OpenAI
 from langchain.chains.question_answering import load_qa_chain
 from langchain.callbacks import get_openai_callback
 
-from utils import get_openai_api_key
+from utils import (
+    DB_PATH,
+    get_openai_api_key,
+    make_tempfile,
+    compute_md5_checksum,
+)
 
 
 OPENAI_API_KEY = get_openai_api_key()
@@ -40,35 +44,32 @@ def get_document(uploaded_file):
 
     """
     doc = ''
-    doc_file = Path(uploaded_file.name)
-    metadata = {
-        'name': doc_file.stem,
-        'extension': doc_file.suffix,
-        'type': uploaded_file.type,
-        'size': uploaded_file.size,
-    }
 
-    if 'pdf' in metadata.get('type', ''):
+    temp = make_tempfile(uploaded_file)
+    checksum = compute_md5_checksum(temp)
+    temp.unlink()
+
+    if 'pdf' in uploaded_file.type:
         reader = PdfReader(uploaded_file)
         doc = '\n'.join([i.extract_text() for i in reader.pages])
     else:
         doc = uploaded_file.read().decode()
 
-    return doc, metadata
+    return doc, checksum
 
 
 def get_documents(uploaded_files):
 
-    docs, metadatas = [], []
+    docs, checksums = [], []
 
     for file_ in uploaded_files:
-        doc, doc_meta = get_document(file_)
+        doc, checksum = get_document(file_)
         docs.append(doc)
-        metadatas.append(doc_meta)
+        checksums.append(checksum)
 
-    metadatas = sorted(metadatas, key=lambda x: x['name'])
+    checksums.sort()
 
-    return docs, metadatas
+    return docs, checksums
 
 
 def get_chunks(doc, chunk_size=1024, chunk_overlap=256):
@@ -88,36 +89,34 @@ def get_chunks_list(docs, chunk_size=1024, chunk_overlap=256):
     return chunks_list
 
 
-def get_vectorstore(chunks, metadata):
+def get_vectorstore(chunks, checksum):
     """Compute the embeddings using OpenAIEmbeddings stored as
     FAISS vectorstores
 
     NOTE:
     - This will incur OpenAI API Usage charges
-    - We only want to compute the embeddings once on a given file
-
-    TODO:
-    - Store the pickle file in another directory
+    - We only want to compute the embeddings once on a given file or batch
 
     """
-    if isinstance(metadata, list):
+    if isinstance(checksum, list):
         # This is a multi-file batch
-        store_name = (
-            '-'.join([f'{i["name"]}-{i["size"]}' for i in metadata]) + '.pkl'
-        )
+        store_name = '-'.join([i for i in checksum]) + '.pkl'
     else:
-        store_name = f'{metadata.get("name")}-{metadata.get("size")}.pkl'
+        store_name = f'{checksum}.pkl'
 
-    if Path(store_name).exists():
-        with open(store_name, 'rb') as fh:
+    store_name = DB_PATH.joinpath(store_name)
+    if store_name.exists():
+        with store_name.open(mode='rb') as fh:
             vstore = pickle.load(fh)
         st.write(f'Embeddings for "{store_name}" loaded from disk.')
     else:
-        embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
-        vstore = FAISS.from_texts(chunks, embedding=embeddings)
-        with open(store_name, 'wb') as fh:
-            pickle.dump(vstore, fh)
-        st.write(f'Embeddings for "{store_name}" saved to disk.')
+        with get_openai_callback() as cb:
+            embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
+            vstore = FAISS.from_texts(chunks, embedding=embeddings)
+            with store_name.open(mode='wb') as fh:
+                pickle.dump(vstore, fh)
+            st.write(f'Embeddings for "{store_name}" saved to disk.')
+            print(f'get_vectorstore embeddings callback - {cb}')
 
     return vstore
 
@@ -158,9 +157,9 @@ def main():
     if not uploaded_file:
         return
 
-    docs, doc_metas = get_documents(uploaded_file)
+    docs, checksums = get_documents(uploaded_file)
     chunks = get_chunks_list(docs)
-    vectorstore = get_vectorstore(chunks, metadata=doc_metas)
+    vectorstore = get_vectorstore(chunks, checksum=checksums)
 
     query = st.text_input(
         'Ask something about the document',
