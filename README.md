@@ -56,4 +56,5 @@ streamlit run app/llm_docchat.py
 - [ ] Use a Chroma DB for the VectorStore instead of pickle
 - [ ] Use a better data store for the chat history instead of pickle
 - [ ] Add option to select OpenAI model and temperature
+- [ ] Add options to customize the prompts
 - [ ] Add more supported document types (i.e. webpages, csv, excel, word doc, epub)
