@@ -48,8 +48,12 @@ streamlit run app/llm_docchat.py
 ## TODOs
 
 - [x] Use multiple documents for a session
-- [ ] Add memory to the conversation
+- [x] Add memory to the conversation
+- [x] Utilize `chat_models.ChatOpenAI` to include results from OpenAI's model
+- [x] Conversing with the same documents picks up from the same history.
 - [ ] Show conversation history
-- [ ] Save sessions and have the ability to use it
-- [ ] Utilize `chat_models.ChatOpenAI` to include results from OpenAI's model
+- [ ] Ability to have chat sessions
 - [ ] Use a Chroma DB for the VectorStore instead of pickle
+- [ ] Use a better data store for the chat history instead of pickle
+- [ ] Add option to select OpenAI model and temperature
+- [ ] Add more supported document types (i.e. webpages, csv, excel, word doc, epub)

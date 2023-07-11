@@ -1,9 +1,13 @@
+# UI
 streamlit
 streamlit-extras
+
+# Core LLM
 langchain
 tiktoken
 openai
-python-dotenv
-pandas
-pypdf2
+unstructured
 faiss-cpu
+
+# Utils
+python-dotenv

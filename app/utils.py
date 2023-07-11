@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 PROJECT_DIR = Path(__file__).parent.parent
 PROJECT_ENV = PROJECT_DIR.joinpath('.env')
 DB_PATH = PROJECT_DIR.joinpath('db')
+HISTORY_PATH = PROJECT_DIR.joinpath('history')
 
 load_dotenv(PROJECT_ENV)
 
@@ -16,12 +17,12 @@ if not DB_PATH.exists():
     DB_PATH.mkdir(mode=0o775, exist_ok=True)
 
 
+if not HISTORY_PATH.exists():
+    HISTORY_PATH.mkdir(mode=0o775, exist_ok=True)
+
+
 def get_openai_api_key():
     return os.getenv('OPENAI_API_KEY')
-
-
-def get_openai_org_id():
-    return os.getenv('OPENAI_ORGANIZATION_ID')
 
 
 def make_tempfile(uploaded_file):
