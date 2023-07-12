@@ -7,22 +7,23 @@ from dotenv import load_dotenv
 
 PROJECT_DIR = Path(__file__).parent.parent
 PROJECT_ENV = PROJECT_DIR.joinpath('.env')
-DB_PATH = PROJECT_DIR.joinpath('db')
-HISTORY_PATH = PROJECT_DIR.joinpath('history')
 
 load_dotenv(PROJECT_ENV)
+
+DB_PATH = PROJECT_DIR.joinpath('db')
+DOCS_CACHE_PATH = PROJECT_DIR.joinpath('docs_cache')
+HISTORY_PATH = PROJECT_DIR.joinpath('history')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
 
 if not DB_PATH.exists():
     DB_PATH.mkdir(mode=0o775, exist_ok=True)
 
+if not DOCS_CACHE_PATH.exists():
+    DOCS_CACHE_PATH.mkdir(mode=0o775, exist_ok=True)
 
 if not HISTORY_PATH.exists():
     HISTORY_PATH.mkdir(mode=0o775, exist_ok=True)
-
-
-def get_openai_api_key():
-    return os.getenv('OPENAI_API_KEY')
 
 
 def make_tempfile(uploaded_file):
@@ -37,9 +38,9 @@ def make_tempfile(uploaded_file):
     return file_path
 
 
-def compute_md5_checksum(file_path):
-    hash_md5 = hashlib.md5()
+def compute_checksum(file_path):
+    hash_ = hashlib.sha1()
     with file_path.open('rb') as fh:
         for chunk in iter(lambda: fh.read(4096), b""):
-            hash_md5.update(chunk)
-    return hash_md5.hexdigest()
+            hash_.update(chunk)
+    return hash_.hexdigest()
