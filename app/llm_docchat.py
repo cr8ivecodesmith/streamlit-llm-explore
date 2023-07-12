@@ -47,9 +47,21 @@ def main():
     vectorstore = VectorStoreManager(documents)
     chain = ChainManager(vectorstore)
 
-    query = st.text_input(
+    if 'messages' not in st.session_state:
+        # Load history from chain.memory
+        st.session_state.messages = chain.get_history()
+
+    for message in st.session_state.messages:
+        with st.chat_message(message['role']):
+            st.markdown(message['content'])
+            sources = message.get('sources')
+            if sources:
+                with st.expander('Sources'):
+                    sources = '\n'.join([f'- {i}' for i in sources])
+                    st.markdown(f'{sources}')
+
+    query = st.chat_input(
         'Ask something about the document',
-        placeholder='Can you highlight the keypoints in bullets?',
         disabled=not uploaded_file,
     )
     if query:
@@ -57,21 +69,18 @@ def main():
 
         response_answer = json.loads(response['answer'])
         answer = response_answer['answer']
-        sources = '\n'.join([f'- {i}' for i in response_answer['sources']])
+        sources = response_answer['sources']
 
-        st.markdown((
-            f'**Question:**<br>'
-            f'\n{query}'
-        ), unsafe_allow_html=True)
-        st.markdown((
-            f'**Answer:**<br>'
-            f'\n{answer}'
-        ), unsafe_allow_html=True)
-        if sources:
-            st.markdown((
-                f'**Sources:**<br>'
-                f'\n{sources}'
-            ), unsafe_allow_html=True)
+        with st.chat_message('user'):
+            st.markdown(f'{query}')
+
+        with st.chat_message('assistant'):
+            st.markdown(f'{answer}')
+
+            if sources:
+                with st.expander('Sources'):
+                    sources = '\n'.join([f'- {i}' for i in sources])
+                    st.markdown(f'{sources}')
 
 
 if __name__ == '__main__':

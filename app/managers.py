@@ -1,3 +1,4 @@
+import json
 import pickle
 
 from langchain.callbacks import get_openai_callback
@@ -183,6 +184,26 @@ class ChainManager:
         with self._history.open(mode='wb') as fh:
             pickle.dump(self.memory, fh)
         print(f'Chat history "{self._history}" saved to disk.')
+
+    def get_history(self):
+        memory = self.memory.dict()
+        chat_memory = memory.get('chat_memory') or {}
+        messages = chat_memory.get('messages') or []
+        history = []
+        for i, msg in enumerate(messages):
+            if i % 2 == 0:
+                history.append({
+                    'role': 'user',
+                    'content': msg.get('content') or '',
+                })
+            else:
+                content = json.loads(msg['content'])
+                history.append({
+                    'role': 'assistant',
+                    'content': content.get('answer'),
+                    'sources': content.get('sources'),
+                })
+        return history
 
     def init_llm(self, model_name: str = None, temperature: float = None):
         if model_name:
