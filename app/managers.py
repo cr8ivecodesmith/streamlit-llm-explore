@@ -205,11 +205,17 @@ class ChainManager:
         condense_question_prompt: str = None,
     ):
         if qa_prompt:
-            self._qa_prompt = qa_prompt
+            self._qa_prompt = PromptTemplate(
+                template=qa_prompt, input_variables=['question', 'context'])
         if doc_prompt:
-            self._doc_prompt = doc_prompt
+            self._doc_prompt = PromptTemplate(
+                template=doc_prompt,
+                input_variables=['page_content', 'source'],
+            )
         if condense_question_prompt:
-            self._condense_question_prompt = condense_question_prompt
+            self._condense_question_prompt = PromptTemplate.from_template(
+                condense_question_prompt
+            )
 
         vectorestore = self._vectorstore.vectorestore
 
