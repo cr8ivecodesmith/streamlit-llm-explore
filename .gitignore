@@ -3,5 +3,7 @@ __pycache__
 
 db/
 history/
+prompt_cache/
+docs_cache/
 *.pkl
 .env

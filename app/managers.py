@@ -10,6 +10,7 @@ from langchain.chat_models import ChatOpenAI
 from langchain.document_loaders.pdf import UnstructuredPDFLoader
 from langchain.document_loaders.text import TextLoader
 from langchain.document_loaders.markdown import UnstructuredMarkdownLoader
+from langchain.document_loaders.csv_loader import CSVLoader
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts.prompt import PromptTemplate
@@ -21,12 +22,14 @@ from utils import (
     DB_PATH,
     DOCS_CACHE_PATH,
     HISTORY_PATH,
+    PROMPT_CACHE_PATH,
     make_tempfile,
+    compute_file_checksum,
     compute_checksum,
 )
 
 
-QA_PROMPT = PromptTemplate(template="""
+QA_PROMPT_TEXT = """
 You are an AI assistant for answering questions about a provided set of
 documents.
 You are given the following extracted parts of a long document and a question.
@@ -38,9 +41,11 @@ Question: {question}
 {context}
 ==========
 Answer in Markdown:
-""", input_variables=['question', 'context'])
+"""
+QA_PROMPT = PromptTemplate(
+    template=QA_PROMPT_TEXT, input_variables=['question', 'context'])
 
-CONDENSE_QUESTION_PROMPT = PromptTemplate.from_template("""
+CONDENSE_QUESTION_PROMPT_TEXT = """
 Given the following conversation and a follow up question, rephrase the
 follow up question to be a standalone question.
 You can assume the question to be related to the documents.
@@ -51,10 +56,13 @@ Chat History:
 Follow Up Input: {question}
 
 Standalone question:
-""")
+"""
+CONDENSE_QUESTION_PROMPT = PromptTemplate.from_template(
+    CONDENSE_QUESTION_PROMPT_TEXT)
 
+DOC_PROMPT_TEXT = 'Content: {page_content}\nSource: {source}'
 DOC_PROMPT = PromptTemplate(
-    template='Content: {page_content}\nSource: {source}',
+    template=DOC_PROMPT_TEXT,
     input_variables=['page_content', 'source'],
 )
 
@@ -68,7 +76,7 @@ class DocumentManager:
 
     def get_from_uploaded_file(self, source):
         temp = make_tempfile(source)
-        self.checksum = compute_checksum(temp)
+        self.checksum = compute_file_checksum(temp)
         self.file_name = source.name.strip()
 
         docs_cache = DOCS_CACHE_PATH.joinpath(f'{self.checksum}-doc.pkl')
@@ -81,6 +89,8 @@ class DocumentManager:
                 loader = UnstructuredPDFLoader(temp)
             elif 'markdown' in source.type:
                 loader = UnstructuredMarkdownLoader(temp)
+            elif 'csv' in source.type:
+                loader = CSVLoader(temp)
             else:
                 loader = TextLoader(temp, encoding='utf-8')
 
@@ -122,7 +132,9 @@ class VectorStoreManager:
 
     def __init__(self, documents: list, name: str = None):
         self._documents = documents
-        self.name = name or '-'.join([i.checksum for i in self._documents])
+        self.name = compute_checksum(
+            name or '-'.join([i.checksum for i in self._documents])
+        )
         self.storage = DB_PATH.joinpath(self.name + '.pkl')
 
         self._process_vectorstore()
@@ -222,8 +234,8 @@ class ChainManager:
     def init_chain(
         self,
         qa_prompt: str = None,
-        doc_prompt: str = None,
         condense_question_prompt: str = None,
+        doc_prompt: str = None,
     ):
         if qa_prompt:
             self._qa_prompt = PromptTemplate(
@@ -267,3 +279,123 @@ class ChainManager:
             self._save_memory()
             print(f'get_response callback - {cb}')
         return response
+
+
+class PromptManager:
+    qa_prompts = None
+    cq_prompts = None
+    _selected_qa_prompt_idx = None
+    _selected_cq_prompt_idx = None
+
+    _vectorstore = None
+    _qa_cache = None
+    _qas_cache = None
+    _cq_cache = None
+    _cqs_cache = None
+
+    def __init__(self, vectorstore):
+        self._vectorstore = vectorstore
+        vs_name = self._vectorstore.name
+        self._qa_cache = PROMPT_CACHE_PATH.joinpath(f'{vs_name}-qa.pkl')
+        self._qas_cache = PROMPT_CACHE_PATH.joinpath(f'{vs_name}-qas.pkl')
+        self._cq_cache = PROMPT_CACHE_PATH.joinpath(f'{vs_name}-cq.pkl')
+        self._cqs_cache = PROMPT_CACHE_PATH.joinpath(f'{vs_name}-cqs.pkl')
+        self._init_cache()
+
+    def _init_cache(self):
+        if self._qa_cache.exists() and self._qas_cache.exists():
+            with self._qa_cache.open(mode='rb') as fh:
+                self.qa_prompts = pickle.load(fh)
+                print(f'QA Prompts "{self._qa_cache}" loaded from disk.')
+            with self._qas_cache.open(mode='rb') as fh:
+                self._selected_qa_prompt_idx = pickle.load(fh)
+                print(f'Selected QA Prompt "{self._qas_cache}" '
+                      f'loaded from disk.')
+        else:
+            self.qa_prompts = []
+            self.add_qa_prompt(QA_PROMPT_TEXT)
+            self.set_qa_prompt(0)
+            with self._qa_cache.open(mode='wb') as fh:
+                pickle.dump(self.qa_prompts, fh)
+                print(f'QA Prompts "{self._qa_cache}" saved to disk.')
+            with self._qas_cache.open(mode='wb') as fh:
+                pickle.dump(self._selected_qa_prompt_idx, fh)
+                print(f'Selected QA Prompt "{self._qas_cache}" '
+                      f'saved to disk.')
+
+        if self._cq_cache.exists() and self._cqs_cache.exists():
+            with self._cq_cache.open(mode='rb') as fh:
+                self.cq_prompts = pickle.load(fh)
+                print(f'Condensed Question Prompts "{self._cq_cache}" '
+                      f'loaded from disk.')
+            with self._cqs_cache.open(mode='rb') as fh:
+                self._selected_cq_prompt_idx = pickle.load(fh)
+                print(f'Selected Condensed Question Prompt '
+                      f'"{self._cqs_cache}" loaded from disk.')
+        else:
+            self.cq_prompts = []
+            self.add_cq_prompt(CONDENSE_QUESTION_PROMPT_TEXT)
+            self.set_cq_prompt(0)
+            with self._cq_cache.open(mode='wb') as fh:
+                pickle.dump(self.cq_prompts, fh)
+                print(f'Condensed Question Prompts "{self._cq_cache}" '
+                      f'saved to disk.')
+            with self._cqs_cache.open(mode='wb') as fh:
+                pickle.dump(self._selected_cq_prompt_idx, fh)
+                print(f'Selected Condensed Question Prompt '
+                      f'"{self._cqs_cache}" saved to disk.')
+
+    def set_qa_prompt(self, prompt_idx: int):
+        self._selected_qa_prompt_idx = prompt_idx
+        with self._qas_cache.open(mode='wb') as fh:
+            pickle.dump(self._selected_qa_prompt_idx, fh)
+            print(f'Selected QA Prompt "{self._qas_cache}" '
+                  f'saved to disk.')
+
+    def add_qa_prompt(self, prompt: str):
+        has_question = '{question}' in prompt
+        has_context = '{context}' in prompt
+
+        if has_question and has_context:
+            self.qa_prompts.append(prompt)
+            with self._qa_cache.open(mode='wb') as fh:
+                pickle.dump(self.qa_prompts, fh)
+                print(f'QA Prompts "{self._qa_cache}" saved to disk.')
+        else:
+            raise ValueError('Missing question or context placeholders.')
+
+    @property
+    def qa_prompt(self):
+        return self.qa_prompts[self._selected_qa_prompt_idx]
+
+    @property
+    def qa_prompt_index(self):
+        return self._selected_qa_prompt_idx
+
+    def set_cq_prompt(self, prompt_idx: int):
+        self._selected_cq_prompt_idx = prompt_idx
+        with self._cqs_cache.open(mode='wb') as fh:
+            pickle.dump(self._selected_cq_prompt_idx, fh)
+            print(f'Selected Condensed Question Prompt '
+                  f'"{self._cqs_cache}" saved to disk.')
+
+    def add_cq_prompt(self, prompt: str):
+        has_question = '{question}' in prompt
+        has_history = '{chat_history}' in prompt
+
+        if has_question and has_history:
+            self.cq_prompts.append(prompt)
+            with self._cq_cache.open(mode='wb') as fh:
+                pickle.dump(self.cq_prompts, fh)
+                print(f'Condensed Question Prompts "{self._cq_cache}" '
+                      f'saved to disk.')
+        else:
+            raise ValueError('Missing question or chat history placeholders.')
+
+    @property
+    def cq_prompt(self):
+        return self.cq_prompts[self._selected_cq_prompt_idx]
+
+    @property
+    def cq_prompt_index(self):
+        return self._selected_cq_prompt_idx
