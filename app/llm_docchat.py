@@ -1,3 +1,5 @@
+from time import sleep
+
 import json
 
 import streamlit as st
@@ -27,6 +29,7 @@ def get_documents(uploaded_files):
         doc_mgr = DocumentManager()
         doc_mgr.get_from_uploaded_file(file_)
         docs.append(doc_mgr)
+        sleep(5)
 
     docs.sort(key=lambda x: x.checksum)
     return docs
