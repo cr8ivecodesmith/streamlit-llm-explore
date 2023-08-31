@@ -82,7 +82,7 @@ def main():
     # Initialize chat session based on given documents
     uploaded_file = st.file_uploader(
         'Upload your documents',
-        type=('txt', 'csv', 'md', 'pdf'),
+        type=('txt', 'csv', 'md', 'pdf', 'xls', 'xlsx'),
         accept_multiple_files=True,
     )
     if not uploaded_file:

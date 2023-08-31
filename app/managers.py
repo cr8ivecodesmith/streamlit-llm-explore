@@ -7,6 +7,7 @@ from langchain.chains import ConversationalRetrievalChain
 from langchain.chains import LLMChain
 from langchain.chains.combine_documents.stuff import StuffDocumentsChain
 from langchain.chat_models import ChatOpenAI
+from langchain.document_loaders import UnstructuredExcelLoader
 from langchain.document_loaders.pdf import UnstructuredPDFLoader
 from langchain.document_loaders.text import TextLoader
 from langchain.document_loaders.markdown import UnstructuredMarkdownLoader
@@ -85,12 +86,15 @@ class DocumentManager:
                 self.document = pickle.load(fh)
                 print(f'Document "{docs_cache}" loaded from disk.')
         else:
+            print(f'source.type -> {source.type}')
             if 'pdf' in source.type:
                 loader = UnstructuredPDFLoader(temp)
             elif 'markdown' in source.type:
                 loader = UnstructuredMarkdownLoader(temp)
             elif 'csv' in source.type:
                 loader = CSVLoader(temp)
+            elif 'spreadsheetml' in source.type or 'ms-excel' in source.type:
+                loader = UnstructuredExcelLoader(temp)
             else:
                 loader = TextLoader(temp, encoding='utf-8')
 
