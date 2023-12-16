@@ -3,9 +3,9 @@ streamlit==1.29.0
 streamlit-extras==0.3.6
 
 # Core LLM
-langchain==0.0.350
+langchain==0.0.316
+openai==0.28.1
 tiktoken==0.5.2
-openai==1.4.0
 faiss-cpu==1.7.4
 
 # unstructured.partition.pdf is not working with the latest version

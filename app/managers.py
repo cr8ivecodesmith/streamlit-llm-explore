@@ -131,10 +131,10 @@ class DocumentManager:
 
 class VectorStoreManager:
 
-    vectorestore = None
-    _documents = None
+    vectorestore: FAISS = None
+    _documents: list = []
 
-    def __init__(self, documents: list, name: str = None):
+    def __init__(self, documents: list, name: str = ""):
         self._documents = documents
         self.name = compute_checksum(
             name or '-'.join([i.checksum for i in self._documents])
