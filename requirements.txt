@@ -6,8 +6,11 @@ streamlit-extras==0.3.6
 langchain==0.0.350
 tiktoken==0.5.2
 openai==1.4.0
-unstructured==0.7.12
 faiss-cpu==1.7.4
+
+# unstructured.partition.pdf is not working with the latest version
+# of unstructured. So we need to pin it to 0.7.12
+unstructured==0.7.12
 
 # Utils
 python-dotenv==1.0.0
