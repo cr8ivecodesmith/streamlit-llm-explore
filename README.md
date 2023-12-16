@@ -44,6 +44,18 @@ python ex/openai_check.py
 streamlit run app/llm_docchat.py
 ```
 
+## Build the Docker image
+
+```
+docker build -t llm-docchat .
+```
+
+## Create the container
+
+```
+docker run -e OPENAI_API_KEY=<OPENAI_API_KEY> -p 8501:8501 --name docchat llm-docchat
+```
+
 
 ## TODOs
 

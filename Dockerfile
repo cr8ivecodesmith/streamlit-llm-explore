@@ -1,15 +1,15 @@
-# downgrading to python 3.9-slim to avoid issues with faiss-cpu
+# using python 3.9-slim to avoid issues with faiss-cpu
 FROM python:3.9-slim
 
 # set the working directory in the container
 WORKDIR /app
 
-# copy the dependencies file to the working directory
-COPY requirements.txt .
-
-# install necesary build tools
+# install necessary build tools
 RUN apt-get update && \
     apt-get install -y gcc
+
+# copy the dependencies file to the working directory
+COPY requirements.txt .
 
 # install dependencies
 RUN pip install -r requirements.txt

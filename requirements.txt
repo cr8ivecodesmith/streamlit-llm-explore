@@ -1,13 +1,15 @@
 # UI
-streamlit
-streamlit-extras
+streamlit==1.29.0
+streamlit-extras==0.3.6
 
 # Core LLM
-langchain
-tiktoken
-openai
-unstructured
-faiss-cpu
+langchain==0.0.350
+tiktoken==0.5.2
+openai==1.4.0
+unstructured==0.7.12
+faiss-cpu==1.7.4
 
 # Utils
-python-dotenv
+python-dotenv==1.0.0
+
+pdf2image==1.16.3
