@@ -56,6 +56,10 @@ docker build -t llm-docchat .
 docker run -e OPENAI_API_KEY=<OPENAI_API_KEY> -p 8501:8501 --name docchat llm-docchat
 ```
 
+## Build and Run using the build script
+```
+./bin/build.sh <OPENAI_API_KEY>
+```
 
 ## TODOs
 
