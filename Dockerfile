@@ -17,7 +17,6 @@ RUN pip install -r requirements.txt
 # copy the content of the local src directory to the working directory
 COPY . /app
 
-# EXPOSE 8501
 EXPOSE 8501
 
 CMD ["streamlit", "run", "app/llm_docchat.py"]

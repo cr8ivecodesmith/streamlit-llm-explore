@@ -14,5 +14,4 @@ unstructured==0.7.12
 
 # Utils
 python-dotenv==1.0.0
-
 pdf2image==1.16.3
