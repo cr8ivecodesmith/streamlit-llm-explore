@@ -78,6 +78,22 @@ def load_prompts(prompts, chain):
         )
 
 
+def get_answer_from_external_sources(query: str):
+    """Get answer from external sources using OpenAI API."""
+    from langchain import OpenAI
+    from langchain.chains import LLMChain
+    from langchain.prompts import PromptTemplate
+    from utils import OPENAI_API_KEY
+
+    template = """Question: {question}
+    Answer: Let's think step by step."""
+    prompt = PromptTemplate(template=template, input_variables=["question"])
+    llm = OpenAI(openai_api_key=OPENAI_API_KEY)
+    llm_chain = LLMChain(llm=llm, prompt=prompt)
+    response = llm_chain.run(question=query)
+    st.markdown(f"[Answer from external source]: \n{response}")
+
+
 def main():
     sidebar()
     st.header("Chat with Document💬")
@@ -126,7 +142,10 @@ def main():
             st.markdown(f'{query}')
 
         with st.chat_message('assistant'):
-            st.markdown(f'{answer}')
+            if "I do not know the answer" in answer:
+                get_answer_from_external_sources(query)
+            else:
+                st.markdown(f'{answer}')
 
             if sources:
                 with st.expander('Sources'):

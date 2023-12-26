@@ -1,13 +1,17 @@
 # UI
-streamlit
-streamlit-extras
+streamlit==1.29.0
+streamlit-extras==0.3.6
 
 # Core LLM
-langchain
-tiktoken
-openai
-unstructured
-faiss-cpu
+langchain==0.0.316
+openai==0.28.1
+tiktoken==0.5.2
+faiss-cpu==1.7.4
+
+# unstructured.partition.pdf is not working with the latest version
+# of unstructured. So we need to pin it to 0.7.12
+unstructured==0.7.12
 
 # Utils
-python-dotenv
+python-dotenv==1.0.0
+pdf2image==1.16.3
